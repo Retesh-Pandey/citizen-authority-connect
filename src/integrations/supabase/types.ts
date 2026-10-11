@@ -14,16 +14,141 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      issues: {
+        Row: {
+          ai_verdict: string | null
+          category: string
+          citizen_confirmed: boolean
+          country: string | null
+          created_at: string
+          department: string
+          description: string | null
+          district: string | null
+          id: string
+          lat: number
+          lng: number
+          merged_count: number
+          photo_url: string
+          reporter_id: string
+          resolution_photo_url: string | null
+          resolved_at: string | null
+          resolver_id: string | null
+          severity: number
+          state: string | null
+          status: string
+          title: string
+        }
+        Insert: {
+          ai_verdict?: string | null
+          category: string
+          citizen_confirmed?: boolean
+          country?: string | null
+          created_at?: string
+          department: string
+          description?: string | null
+          district?: string | null
+          id?: string
+          lat: number
+          lng: number
+          merged_count?: number
+          photo_url: string
+          reporter_id: string
+          resolution_photo_url?: string | null
+          resolved_at?: string | null
+          resolver_id?: string | null
+          severity?: number
+          state?: string | null
+          status?: string
+          title: string
+        }
+        Update: {
+          ai_verdict?: string | null
+          category?: string
+          citizen_confirmed?: boolean
+          country?: string | null
+          created_at?: string
+          department?: string
+          description?: string | null
+          district?: string | null
+          id?: string
+          lat?: number
+          lng?: number
+          merged_count?: number
+          photo_url?: string
+          reporter_id?: string
+          resolution_photo_url?: string | null
+          resolved_at?: string | null
+          resolver_id?: string | null
+          severity?: number
+          state?: string | null
+          status?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          country: string | null
+          created_at: string
+          display_name: string
+          district: string | null
+          id: string
+          points: number
+          state: string | null
+        }
+        Insert: {
+          country?: string | null
+          created_at?: string
+          display_name?: string
+          district?: string | null
+          id: string
+          points?: number
+          state?: string | null
+        }
+        Update: {
+          country?: string | null
+          created_at?: string
+          display_name?: string
+          district?: string | null
+          id?: string
+          points?: number
+          state?: string | null
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "citizen" | "authority"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +275,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["citizen", "authority"],
+    },
   },
 } as const
