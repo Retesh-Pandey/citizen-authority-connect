@@ -128,4 +128,3 @@ export const getPhotoUrls = createServerFn({ method: "POST" })
     return out;
   });
 
-export const getMapsKey = createServerFn({ method: "GET" }).handler(async () => ({ ok: true }));
