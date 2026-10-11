@@ -21,7 +21,7 @@ type Status = "Pending" | "In Progress" | "Resolved";
 type Dept = "Roads" | "Sanitation" | "Water" | "Electrical";
 type Issue = {
   id: number; title: string; location: string; dept: Dept; status: Status;
-  merged: number; date: string; confirmed?: boolean; mine?: boolean; photo?: string;
+  merged: number; date: string; confirmed?: boolean; mine?: boolean; photo?: string | undefined;
 };
 
 const deptIcon: Record<Dept, typeof Construction> = {
@@ -172,7 +172,7 @@ function ReportFlow({ onDone, onBack }: { onDone: (i: Issue) => void; onBack: ()
   const fileRef = useRef<HTMLInputElement>(null);
   const [photo, setPhoto] = useState<string>();
   const [phase, setPhase] = useState<"idle" | "analyzing" | "done">("idle");
-  const [tag, setTag] = useState(tagOptions[0]);
+  const [tag, setTag] = useState(tagOptions[0]!);
   const [location, setLocation] = useState("");
   const [locating, setLocating] = useState(false);
   const [note, setNote] = useState("");
@@ -181,7 +181,7 @@ function ReportFlow({ onDone, onBack }: { onDone: (i: Issue) => void; onBack: ()
     if (!f) return;
     setPhoto(URL.createObjectURL(f));
     setPhase("analyzing");
-    setTimeout(() => { setTag(tagOptions[Math.floor(Math.random() * tagOptions.length)]); setPhase("done"); }, 2200);
+    setTimeout(() => { setTag(tagOptions[Math.floor(Math.random() * tagOptions.length)]!); setPhase("done"); }, 2200);
   };
   const locate = () => { setLocating(true); setTimeout(() => { setLocation("12 Main St, Ward 7"); setLocating(false); }, 1000); };
 
