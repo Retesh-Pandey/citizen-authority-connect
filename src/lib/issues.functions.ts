@@ -26,6 +26,7 @@ const reportInput = z.object({
   lat: z.number().min(-90).max(90),
   lng: z.number().min(-180).max(180),
   description: z.string().max(500).optional(),
+  department: z.enum(["Roads", "Sanitation", "Water", "Electrical"]).optional(),
   country: z.string().max(80).optional(),
   state: z.string().max(80).optional(),
   district: z.string().max(80).optional(),
@@ -48,6 +49,7 @@ Return json: {"is_civic_issue": boolean, "title": short title (max 6 words), "ca
         [photoUrl],
       );
     if (!ai.is_civic_issue) throw new Error("AI couldn't find a civic issue in this photo. Please retake it.");
+    if (data.department) ai.department = data.department;
     const severity = Math.min(5, Math.max(1, Math.round(ai.severity || 2)));
 
     // Merge into an existing open issue of the same category within ~150m

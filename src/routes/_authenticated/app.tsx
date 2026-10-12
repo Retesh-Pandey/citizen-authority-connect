@@ -190,10 +190,32 @@ function ReportCard({ i, photo }: { i: IssueRow; photo?: string | undefined }) {
   );
 }
 
+const DEPTS = ["Roads", "Sanitation", "Water", "Electrical"] as const;
+const SUGGESTIONS: { t: string; d: string }[] = [
+  { t: "Large pothole on the main road", d: "Roads" },
+  { t: "Broken footpath / damaged pavement", d: "Roads" },
+  { t: "Road cave-in or crack", d: "Roads" },
+  { t: "Missing or broken speed breaker", d: "Roads" },
+  { t: "Garbage pile not collected for days", d: "Sanitation" },
+  { t: "Overflowing dustbin", d: "Sanitation" },
+  { t: "Dead animal on the road", d: "Sanitation" },
+  { t: "Open sewage / blocked drain", d: "Sanitation" },
+  { t: "Waterlogging after rain", d: "Water" },
+  { t: "Leaking water pipeline", d: "Water" },
+  { t: "No water supply in the area", d: "Water" },
+  { t: "Dirty / contaminated tap water", d: "Water" },
+  { t: "Streetlight not working", d: "Electrical" },
+  { t: "Hanging or exposed electric wires", d: "Electrical" },
+  { t: "Damaged electric pole", d: "Electrical" },
+  { t: "Traffic signal not working", d: "Electrical" },
+];
+
 function ReportFlow({ me, onDone, onBack }: { me: Me; onDone: () => void; onBack: () => void }) {
   const qc = useQueryClient();
   const [shot, setShot] = useState<{ blob: Blob; preview: string; pos: { lat: number; lng: number } }>();
   const [note, setNote] = useState("");
+  const [dept, setDept] = useState<string>();
+  const [focus, setFocus] = useState(false);
   const [phase, setPhase] = useState<"camera" | "review" | "analyzing" | "done">("camera");
   const [err, setErr] = useState<string>();
   const [result, setResult] = useState<Awaited<ReturnType<typeof reportIssue>>>();
@@ -211,7 +233,7 @@ function ReportFlow({ me, onDone, onBack }: { me: Me; onDone: () => void; onBack
     setPhase("analyzing"); setErr(undefined);
     try {
       const photoPath = await uploadPhoto(me.id, shot.blob);
-      const r = await reportIssue({ data: { photoPath, lat: shot.pos.lat, lng: shot.pos.lng, description: note || undefined, country: me.profile?.country ?? undefined, state: me.profile?.state ?? undefined, district: me.profile?.district ?? undefined } });
+      const r = await reportIssue({ data: { photoPath, lat: shot.pos.lat, lng: shot.pos.lng, description: note || undefined, department: dept, country: me.profile?.country ?? undefined, state: me.profile?.state ?? undefined, district: me.profile?.district ?? undefined } });
       setResult(r); setPhase("done");
       qc.invalidateQueries({ queryKey: ["issues"] }); qc.invalidateQueries({ queryKey: ["me"] });
     } catch (e) { setErr((e as Error).message); setPhase("review"); }
@@ -238,10 +260,33 @@ function ReportFlow({ me, onDone, onBack }: { me: Me; onDone: () => void; onBack
       {err && <p className="rounded-full bg-pending-soft px-4 py-2 text-center text-sm font-medium text-pending">{err}</p>}
       {phase === "review" && (
         <>
-          <label className="block space-y-2">
+          <div className="space-y-2">
+            <span className="text-sm font-semibold">Which department? <span className="font-normal text-muted-foreground">(optional — AI decides if left empty)</span></span>
+            <div className="flex flex-wrap gap-2">
+              {DEPTS.map((d) => (
+                <button key={d} type="button" onClick={() => setDept(dept === d ? undefined : d)}
+                  className={`rounded-full px-4 py-2 text-sm font-semibold ${dept === d ? "bg-warm text-primary-foreground" : "bg-secondary text-secondary-foreground"}`}>{d}</button>
+              ))}
+            </div>
+          </div>
+          <label className="relative block space-y-2">
             <span className="text-sm font-semibold">Describe the issue</span>
-            <textarea value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} rows={4} placeholder="e.g. Large pothole near the bus stop, cars swerving to avoid it…" aria-label="Description"
+            <textarea value={note} onChange={(e) => setNote(e.target.value)} onFocus={() => setFocus(true)} onBlur={() => setTimeout(() => setFocus(false), 150)} maxLength={500} rows={3} placeholder="Start typing, e.g. pothole, garbage, streetlight…" aria-label="Description"
               className="w-full resize-none rounded-3xl border bg-card px-5 py-4 outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-ring" />
+            {focus && (() => {
+              const q = note.toLowerCase().trim();
+              const sug = SUGGESTIONS.filter((x) => (!dept || x.d === dept) && (!q || x.t.toLowerCase().includes(q) || q.split(/\s+/).some((w) => w.length > 2 && x.t.toLowerCase().includes(w)))).slice(0, 6);
+              return sug.length > 0 && (
+                <div className="absolute inset-x-0 top-full z-20 mt-1 overflow-hidden rounded-3xl border bg-card p-1 shadow-soft">
+                  {sug.map((x) => (
+                    <button key={x.t} type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => { setNote(x.t); setDept(x.d); setFocus(false); }}
+                      className="flex w-full items-center justify-between gap-2 rounded-full px-4 py-2 text-left text-sm hover:bg-secondary">
+                      <span>{x.t}</span><span className="shrink-0 rounded-full bg-accent px-2 py-0.5 text-xs font-semibold text-accent-foreground">{x.d}</span>
+                    </button>
+                  ))}
+                </div>
+              );
+            })()}
             <span className="block text-right text-xs text-muted-foreground">{note.length}/500</span>
           </label>
           <div className="flex gap-3">
@@ -272,13 +317,14 @@ function ReportFlow({ me, onDone, onBack }: { me: Me; onDone: () => void; onBack
 function MapView({ issues, center, onResolve }: { issues: IssueRow[]; center: { lat: number; lng: number }; onResolve?: ((i: IssueRow) => void) | undefined }) {
   const [sel, setSel] = useState<IssueRow>();
   const [me, setMe] = useState<{ lat: number; lng: number }>();
-  const [filter, setFilter] = useState<"open" | "all">("open");
+  const [filter, setFilter] = useState<"open" | "all">("all");
+  useEffect(() => { getPosition().then(setMe).catch(() => {}); }, []);
   const list = issues.filter((i) => filter === "all" || i.status !== "Resolved");
   const urls = usePhotoUrls(sel ? [sel.photo_url] : []);
   return (
     <div className="space-y-3 animate-in fade-in">
       <div className="flex items-center justify-between gap-2">
-        <h1 className="text-2xl font-bold">City map</h1>
+        <div><h1 className="text-2xl font-bold">City map</h1><p className="text-xs text-muted-foreground">{list.length} issues · <span className="text-pending">●</span> Pending <span className="text-primary">●</span> In progress <span className="text-resolved">●</span> Resolved · <span className="text-blue-500">●</span> You</p></div>
         <div className="flex gap-2">
           <button onClick={() => setFilter(filter === "open" ? "all" : "open")} className="rounded-full bg-secondary px-3 py-2 text-sm font-semibold text-secondary-foreground">{filter === "open" ? "Open only" : "All issues"}</button>
           <button onClick={() => getPosition().then(setMe).catch(() => {})} aria-label="Show my location" className="grid size-10 place-items-center rounded-full bg-warm text-primary-foreground"><Navigation className="size-4" /></button>
