@@ -25,7 +25,7 @@ const statusColor: Record<string, string> = { Pending: "#d4a03a", "In Progress":
 export function IssueMap({ issues, center, me, onSelect, className = "h-[60vh]" }: {
   issues: IssueRow[];
   center: { lat: number; lng: number };
-  me?: { lat: number; lng: number };
+  me?: { lat: number; lng: number } | undefined;
   onSelect?: (i: IssueRow) => void;
   className?: string;
 }) {
