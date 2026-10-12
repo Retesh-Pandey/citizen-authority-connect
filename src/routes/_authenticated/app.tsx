@@ -153,7 +153,7 @@ function ReportList({ list }: { list: IssueRow[] }) {
   return <div className="space-y-3">{list.map((i) => <ReportCard key={i.id} i={i} photo={urls[i.photo_url]} />)}</div>;
 }
 
-function ReportCard({ i, photo }: { i: IssueRow; photo?: string }) {
+function ReportCard({ i, photo }: { i: IssueRow; photo?: string | undefined }) {
   const qc = useQueryClient();
   const confirm = async () => {
     await supabase.from("issues").update({ citizen_confirmed: true }).eq("id", i.id);
@@ -260,7 +260,7 @@ function ReportFlow({ me, onDone, onBack }: { me: Me; onDone: () => void; onBack
 
 /* ---------------- Shared ---------------- */
 
-function MapView({ issues, center, onResolve }: { issues: IssueRow[]; center: { lat: number; lng: number }; onResolve?: (i: IssueRow) => void }) {
+function MapView({ issues, center, onResolve }: { issues: IssueRow[]; center: { lat: number; lng: number }; onResolve?: ((i: IssueRow) => void) | undefined }) {
   const [sel, setSel] = useState<IssueRow>();
   const [me, setMe] = useState<{ lat: number; lng: number }>();
   const [filter, setFilter] = useState<"open" | "all">("open");
@@ -386,7 +386,7 @@ function Authority({ me, issues }: { me: Me; issues: IssueRow[] }) {
   );
 }
 
-function Ticket({ i, photo, onVerify }: { i: IssueRow; photo?: string; onVerify: () => void }) {
+function Ticket({ i, photo, onVerify }: { i: IssueRow; photo?: string | undefined; onVerify: () => void }) {
   const qc = useQueryClient();
   const Icon = deptIcon[i.department] ?? MapPin;
   const setStatus = async (s: Status) => {

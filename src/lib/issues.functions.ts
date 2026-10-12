@@ -40,13 +40,13 @@ export const reportIssue = createServerFn({ method: "POST" })
     if (!data.photoPath.startsWith(`${userId}/`)) throw new Error("Invalid photo");
     const { supabaseAdmin: admin } = await import("@/integrations/supabase/client.server");
 
-    const ai = await import("./ai.server").then((m) =>
-      m.askVisionJson<{ is_civic_issue: boolean; title: string; category: string; department: string; severity: number }>(
+    const photoUrl = await signed(admin, data.photoPath);
+    const { askVisionJson } = await import("./ai.server");
+    const ai = await askVisionJson<{ is_civic_issue: boolean; title: string; category: string; department: string; severity: number }>(
         `You are a municipal triage assistant. Look at this citizen photo${data.description ? ` (note: "${data.description}")` : ""}.
 Return json: {"is_civic_issue": boolean, "title": short title (max 6 words), "category": one of ["Pothole","Garbage","Waterlogging","Streetlight","Broken Footpath","Sewage","Other"], "department": one of ["Roads","Sanitation","Water","Electrical"], "severity": integer 1-5 (5 = dangerous / very large)}.`,
-        [await signed(admin, data.photoPath)],
-      ),
-    );
+        [photoUrl],
+      );
     if (!ai.is_civic_issue) throw new Error("AI couldn't find a civic issue in this photo. Please retake it.");
     const severity = Math.min(5, Math.max(1, Math.round(ai.severity || 2)));
 
@@ -61,9 +61,9 @@ Return json: {"is_civic_issue": boolean, "title": short title (max 6 words), "ca
     const { data: row, error } = await admin
       .from("issues")
       .insert({
-        reporter_id: userId, title: ai.title, description: data.description, category: ai.category,
+        reporter_id: userId, title: ai.title, description: data.description ?? null, category: ai.category,
         department: ai.department, severity, lat: data.lat, lng: data.lng, photo_url: data.photoPath,
-        country: data.country, state: data.state, district: data.district,
+        country: data.country ?? null, state: data.state ?? null, district: data.district ?? null,
       })
       .select("id")
       .single();
