@@ -9,6 +9,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { meQuery, issuesQuery, leaderboardQuery, useLiveIssues, usePhotoUrls, uploadPhoto, type IssueRow } from "@/lib/useCivic";
 import { reportIssue, resolveIssue } from "@/lib/issues.functions";
 import { LiveCamera } from "@/components/LiveCamera";
+import { NotificationBell } from "@/components/NotificationBell";
+import { Toaster } from "@/components/ui/sonner";
 import { IssueMap, directionsUrl } from "@/components/IssueMap";
 import { getPosition } from "@/lib/locations";
 
@@ -72,11 +74,13 @@ function AppPage() {
           <div className="flex items-center gap-2">
             <span className="flex items-center gap-1 rounded-full bg-accent px-3 py-1.5 text-sm font-bold text-accent-foreground"><Trophy className="size-4" />{me.profile?.points ?? 0}</span>
             <span className="rounded-full bg-secondary px-3 py-1.5 text-sm font-semibold capitalize text-secondary-foreground">{me.role}</span>
+            <NotificationBell userId={me.id} />
             <button onClick={signOut} aria-label="Sign out" className="grid size-10 place-items-center rounded-full bg-secondary"><LogOut className="size-4" /></button>
           </div>
         </div>
       </header>
       <main>{me.role === "citizen" ? <Citizen me={me} issues={issues} /> : <Authority me={me} issues={issues} />}</main>
+      <Toaster position="top-center" />
     </div>
   );
 }
@@ -234,8 +238,12 @@ function ReportFlow({ me, onDone, onBack }: { me: Me; onDone: () => void; onBack
       {err && <p className="rounded-full bg-pending-soft px-4 py-2 text-center text-sm font-medium text-pending">{err}</p>}
       {phase === "review" && (
         <>
-          <input value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} placeholder="Add a note (optional)" aria-label="Note"
-            className="w-full rounded-full border bg-card px-5 py-3 outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-ring" />
+          <label className="block space-y-2">
+            <span className="text-sm font-semibold">Describe the issue</span>
+            <textarea value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} rows={4} placeholder="e.g. Large pothole near the bus stop, cars swerving to avoid it…" aria-label="Description"
+              className="w-full resize-none rounded-3xl border bg-card px-5 py-4 outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-ring" />
+            <span className="block text-right text-xs text-muted-foreground">{note.length}/500</span>
+          </label>
           <div className="flex gap-3">
             <button onClick={() => { setShot(undefined); setPhase("camera"); }} className="flex-1 rounded-full bg-secondary py-4 font-bold text-secondary-foreground">Retake</button>
             <button onClick={submit} className="flex-[2] rounded-full bg-warm py-4 font-bold text-primary-foreground shadow-soft active:scale-95">Submit Report</button>
