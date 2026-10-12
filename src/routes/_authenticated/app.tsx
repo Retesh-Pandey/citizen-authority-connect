@@ -324,7 +324,7 @@ function MapView({ issues, center, onResolve }: { issues: IssueRow[]; center: { 
   return (
     <div className="space-y-3 animate-in fade-in">
       <div className="flex items-center justify-between gap-2">
-        <div><h1 className="text-2xl font-bold">City map</h1><p className="text-xs text-muted-foreground">{list.length} issues · <span className="text-pending">●</span> Pending <span className="text-primary">●</span> In progress <span className="text-resolved">●</span> Resolved · <span className="text-blue-500">●</span> You</p></div>
+        <div><h1 className="text-2xl font-bold">City map</h1><p className="text-xs text-muted-foreground">{list.length} issues · <span className="text-pending">●</span> Pending <span className="text-primary">●</span> In progress <span className="text-resolved">●</span> Resolved · <span style={{ color: "#3b82f6" }}>●</span> You</p></div>
         <div className="flex gap-2">
           <button onClick={() => setFilter(filter === "open" ? "all" : "open")} className="rounded-full bg-secondary px-3 py-2 text-sm font-semibold text-secondary-foreground">{filter === "open" ? "Open only" : "All issues"}</button>
           <button onClick={() => getPosition().then(setMe).catch(() => {})} aria-label="Show my location" className="grid size-10 place-items-center rounded-full bg-warm text-primary-foreground"><Navigation className="size-4" /></button>

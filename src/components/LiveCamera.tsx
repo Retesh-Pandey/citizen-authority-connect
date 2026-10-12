@@ -12,6 +12,8 @@ export function LiveCamera({ onCapture, onClose, label = "Capture" }: {
   const fileRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string>();
   const [ready, setReady] = useState(false);
+  const [inFrame, setInFrame] = useState(false);
+  useEffect(() => { try { setInFrame(window.self !== window.top); } catch { setInFrame(true); } }, []);
   const [facing, setFacing] = useState<"environment" | "user">("environment");
 
   useEffect(() => {
@@ -32,7 +34,7 @@ export function LiveCamera({ onCapture, onClose, label = "Capture" }: {
         const v = videoRef.current;
         if (v) { v.srcObject = s; try { await v.play(); } catch { /* autoplay */ } }
       })
-      .catch(() => setError("Camera access was blocked. Allow camera in your browser, or use your phone camera below."));
+      .catch(() => setError("Camera is blocked here. The editor preview window doesn't allow camera access — open the app in its own tab, allow camera when asked, or use your phone camera below."));
     return () => { cancelled = true; stream?.getTracks().forEach((t) => t.stop()); };
   }, [facing]);
 
@@ -63,7 +65,12 @@ export function LiveCamera({ onCapture, onClose, label = "Capture" }: {
     <div className="space-y-3">
       <div className="relative aspect-[3/4] w-full overflow-hidden rounded-[2rem] bg-secondary">
         {error ? (
-          <p className="grid h-full place-items-center p-6 text-center text-sm text-secondary-foreground">{error}</p>
+          <div className="grid h-full place-content-center gap-4 p-6 text-center text-sm text-secondary-foreground">
+            <p>{error}</p>
+            {inFrame && (
+              <a href={window.location.href} target="_blank" rel="noreferrer" className="mx-auto rounded-full bg-warm px-5 py-3 font-bold text-primary-foreground">Open app in a new tab</a>
+            )}
+          </div>
         ) : (
           <video ref={videoRef} autoPlay playsInline muted onLoadedData={() => setReady(true)} className="size-full object-cover" />
         )}
