@@ -6,7 +6,7 @@ const MODEL = "openai/gpt-6-astra";
 
 /** Streams a vision request through Lovable AI and returns parsed JSON. */
 export async function askVisionJson<T>(prompt: string, imageUrls: string[]): Promise<T> {
-  const apiKey = process.env.LOVABLE_API_KEY;
+  const apiKey = process.env['LOVABLE_API_KEY'];
   if (!apiKey) throw new Error("AI is not configured");
   const provider = createOpenAI({
     baseURL: GATEWAY,
