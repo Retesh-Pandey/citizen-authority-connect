@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useQueryClient, useSuspenseQuery, useQuery } from "@tanstack/react-query";
 import {
   Plus, MapPin, Sparkles, CheckCircle2, Clock, Loader2, Home, ListChecks, Map as MapIcon, Trophy,
