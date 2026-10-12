@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useQueryClient, useSuspenseQuery, useQuery } from "@tanstack/react-query";
 import {
   Plus, MapPin, Sparkles, CheckCircle2, Clock, Loader2, Home, ListChecks, Map as MapIcon, Trophy,
@@ -10,7 +10,7 @@ import { meQuery, issuesQuery, leaderboardQuery, useLiveIssues, usePhotoUrls, up
 import { reportIssue, resolveIssue } from "@/lib/issues.functions";
 import { LiveCamera } from "@/components/LiveCamera";
 import { IssueMap, directionsUrl } from "@/components/IssueMap";
-import { findDistrict, getPosition } from "@/lib/locations";
+import { getPosition } from "@/lib/locations";
 
 export const Route = createFileRoute("/_authenticated/app")({
   head: () => ({
@@ -83,9 +83,10 @@ function AppPage() {
 
 type Me = Awaited<ReturnType<NonNullable<typeof meQuery.queryFn>>>;
 
-function useCenter(me: Me) {
-  const d = findDistrict(me.profile?.country, me.profile?.state, me.profile?.district);
-  return useMemo(() => (d ? { lat: d.lat, lng: d.lng } : { lat: 22.5726, lng: 88.3639 }), [d?.lat, d?.lng]);
+function useCenter(_me: Me) {
+  const [c, setC] = useState({ lat: 22.5726, lng: 88.3639 });
+  useEffect(() => { getPosition().then(setC).catch(() => {}); }, []);
+  return c;
 }
 
 /* ---------------- Citizen ---------------- */

@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Building2, Loader2, MapPin, User, CheckCircle2, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { LOCATIONS, findDistrict, distanceKm, getPosition, CITY_RADIUS_KM } from "@/lib/locations";
+import { STATES, getPosition, reverseGeocode, sameState } from "@/lib/locations";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -25,7 +25,7 @@ function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
-  const [country, setCountry] = useState("India");
+  const [country] = useState("India");
   const [state, setState] = useState("");
   const [district, setDistrict] = useState("");
   const [loc, setLoc] = useState<"idle" | "checking" | "match" | "mismatch">("idle");
@@ -33,18 +33,15 @@ function AuthPage() {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string }>();
 
-  const states = Object.keys(LOCATIONS[country] ?? {});
-  const districts = LOCATIONS[country]?.[state] ?? [];
-
   const checkLocation = async () => {
-    const d = findDistrict(country, state, district);
-    if (!d) return;
     setLoc("checking");
     try {
       const me = await getPosition();
-      const km = distanceKm(me, d);
-      if (km <= CITY_RADIUS_KM) { setLoc("match"); setLocMsg(`You're in ${d.name}.`); }
-      else { setLoc("mismatch"); setLocMsg(`Your current location is ${Math.round(km)} km from ${d.name}.`); }
+      const g = await reverseGeocode(me);
+      if (g && g.state && !sameState(g.state, state)) { setLoc("mismatch"); setLocMsg(`You appear to be in ${g.state}, not ${state}.`); return; }
+      const city = g?.city || state;
+      setDistrict(city);
+      setLoc("match"); setLocMsg(`Location confirmed: ${city}`);
     } catch (e) { setLoc("mismatch"); setLocMsg((e as Error).message); }
   };
 
@@ -57,7 +54,7 @@ function AuthPage() {
       if (error) return setMsg({ ok: false, text: error.message });
       nav({ to: "/app" });
     } else {
-      if (loc !== "match") { setBusy(false); return setMsg({ ok: false, text: "Please confirm your current location matches the selected district." }); }
+      if (loc !== "match") { setBusy(false); return setMsg({ ok: false, text: "Please confirm your current location matches the selected state." }); }
       const { error } = await supabase.auth.signUp({
         email, password,
         options: { emailRedirectTo: `${window.location.origin}/app`, data: { role, display_name: name, country, state, district } },
@@ -91,18 +88,11 @@ function AuthPage() {
         {mode === "signup" && (
           <>
             <input required value={name} onChange={(e) => setName(e.target.value)} placeholder={role === "authority" ? "Name / Department" : "Your name"} className={field} aria-label="Name" />
-            <select value={country} onChange={(e) => { setCountry(e.target.value); setState(""); setDistrict(""); setLoc("idle"); }} className={field} aria-label="Country">
-              {Object.keys(LOCATIONS).map((c) => <option key={c}>{c}</option>)}
-            </select>
             <select required value={state} onChange={(e) => { setState(e.target.value); setDistrict(""); setLoc("idle"); }} className={field} aria-label="State">
               <option value="">Select state</option>
-              {states.map((s) => <option key={s}>{s}</option>)}
+              {STATES.map((s) => <option key={s}>{s}</option>)}
             </select>
-            <select required value={district} onChange={(e) => { setDistrict(e.target.value); setLoc("idle"); }} className={field} aria-label="District">
-              <option value="">Select district / city</option>
-              {districts.map((d) => <option key={d.name}>{d.name}</option>)}
-            </select>
-            {district && (
+            {state && (
               <button type="button" onClick={checkLocation}
                 className={`flex w-full items-center justify-center gap-2 rounded-full py-3 font-semibold ${loc === "match" ? "bg-resolved-soft text-resolved" : loc === "mismatch" ? "bg-pending-soft text-pending" : "bg-secondary text-secondary-foreground"}`}>
                 {loc === "checking" ? <Loader2 className="size-4 animate-spin" /> : loc === "match" ? <CheckCircle2 className="size-4" /> : loc === "mismatch" ? <AlertCircle className="size-4" /> : <MapPin className="size-4" />}

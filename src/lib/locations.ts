@@ -59,3 +59,18 @@ export function getPosition(): Promise<{ lat: number; lng: number }> {
     );
   });
 }
+
+export const STATES = ["Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal", "Andaman and Nicobar Islands", "Chandigarh", "Dadra and Nagar Haveli and Daman and Diu", "Delhi", "Jammu and Kashmir", "Ladakh", "Lakshadweep", "Puducherry"];
+
+/** Looks up the city/town name and state for a GPS position. */
+export async function reverseGeocode(pos: { lat: number; lng: number }): Promise<{ city: string; state: string } | null> {
+  try {
+    const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=10&lat=${pos.lat}&lon=${pos.lng}`);
+    if (!r.ok) return null;
+    const a = (await r.json()).address ?? {};
+    const city = a.city || a.town || a.village || a.city_district || a.county || a.state_district || "";
+    return { city, state: a.state || "" };
+  } catch { return null; }
+}
+const norm = (x: string) => x.toLowerCase().replace(/&/g, "and").replace(/[^a-z]/g, "");
+export const sameState = (a: string, b: string) => !!a && !!b && (norm(a) === norm(b) || norm(a).includes(norm(b)) || norm(b).includes(norm(a)));
