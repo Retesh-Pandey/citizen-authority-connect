@@ -153,7 +153,7 @@ function ReportList({ list }: { list: IssueRow[] }) {
   return <div className="space-y-3">{list.map((i) => <ReportCard key={i.id} i={i} photo={urls[i.photo_url]} />)}</div>;
 }
 
-function ReportCard({ i, photo }: { i: IssueRow; photo?: string }) {
+function ReportCard({ i, photo }: { i: IssueRow; photo?: string | undefined }) {
   const qc = useQueryClient();
   const confirm = async () => {
     await supabase.from("issues").update({ citizen_confirmed: true }).eq("id", i.id);
