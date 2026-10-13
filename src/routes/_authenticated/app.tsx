@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
 import { useQueryClient, useSuspenseQuery, useQuery } from "@tanstack/react-query";
-import {
+import { X,
   Plus, MapPin, Sparkles, CheckCircle2, Clock, Loader2, Home, ListChecks, Map as MapIcon, Trophy,
   Building2, Layers, Trash2, Construction, Droplets, Lightbulb, ArrowLeft, ThumbsUp, LogOut, Navigation, Camera, Star, XCircle,
 } from "lucide-react";
