@@ -5,7 +5,7 @@ const GATEWAY = "https://ai.gateway.lovable.dev/v1";
 const MODEL = "openai/gpt-6-astra";
 
 /** Streams a vision request through Lovable AI and returns parsed JSON. */
-export async function askVisionJson<T>(prompt: string, imageUrls: string[]): Promise<T> {
+export async function askVisionJson<T>(prompt: string, images: Uint8Array[]): Promise<T> {
   const apiKey = process.env['LOVABLE_API_KEY'];
   if (!apiKey) throw new Error("AI is not configured");
   const provider = createOpenAI({
@@ -20,7 +20,7 @@ export async function askVisionJson<T>(prompt: string, imageUrls: string[]): Pro
         role: "user",
         content: [
           { type: "text", text: prompt + "\nRespond with ONLY a json object, no markdown." },
-          ...imageUrls.map((u) => ({ type: "image" as const, image: new URL(u) })),
+          ...images.map((b) => ({ type: "image" as const, image: b, mediaType: "image/jpeg" })),
         ],
       },
     ],
