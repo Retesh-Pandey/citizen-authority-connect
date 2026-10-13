@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
 import { useQueryClient, useSuspenseQuery, useQuery } from "@tanstack/react-query";
-import {
+import { X,
   Plus, MapPin, Sparkles, CheckCircle2, Clock, Loader2, Home, ListChecks, Map as MapIcon, Trophy,
   Building2, Layers, Trash2, Construction, Droplets, Lightbulb, ArrowLeft, ThumbsUp, LogOut, Navigation, Camera, Star, XCircle,
 } from "lucide-react";
@@ -12,7 +12,7 @@ import { LiveCamera } from "@/components/LiveCamera";
 import { NotificationBell } from "@/components/NotificationBell";
 import { Toaster } from "@/components/ui/sonner";
 import { IssueMap, directionsUrl } from "@/components/IssueMap";
-import { getPosition } from "@/lib/locations";
+import { getPosition, distanceKm } from "@/lib/locations";
 
 export const Route = createFileRoute("/_authenticated/app")({
   head: () => ({
@@ -314,13 +314,32 @@ function ReportFlow({ me, onDone, onBack }: { me: Me; onDone: () => void; onBack
 
 /* ---------------- Shared ---------------- */
 
+function SpotRow({ i, photo, onResolve }: { i: IssueRow; photo?: string | undefined; onResolve?: ((i: IssueRow) => void) | undefined }) {
+  const n = Math.max(1, i.merged_count);
+  return (
+    <div className="flex gap-3 rounded-3xl border p-3">
+      {photo ? <img src={photo} alt="" className="size-14 shrink-0 rounded-full object-cover" /> : <IconPill><MapPin className="size-5" /></IconPill>}
+      <div className="min-w-0 flex-1 space-y-1.5">
+        <div className="font-semibold">{i.title}</div>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <StatusBadge s={i.status} /><Severity n={i.severity} />
+          <span className="rounded-full bg-accent px-2.5 py-1 text-xs font-semibold text-accent-foreground">{n} {n === 1 ? "citizen" : "citizens"}</span>
+          <span className="rounded-full bg-secondary px-2.5 py-1 text-xs font-semibold text-secondary-foreground">{i.department}</span>
+        </div>
+        <p className="text-xs text-muted-foreground">Reported {ago(i.created_at)}{i.status === "Resolved" && i.resolved_at ? ` · fixed ${ago(i.resolved_at)}` : ""}</p>
+        {onResolve && i.status !== "Resolved" && <button onClick={() => onResolve(i)} className="inline-flex items-center gap-1.5 rounded-full bg-resolved-soft px-3 py-1.5 text-xs font-bold text-resolved"><Camera className="size-3.5" />Verify fix</button>}
+      </div>
+    </div>
+  );
+}
+
 function MapView({ issues, center, onResolve }: { issues: IssueRow[]; center: { lat: number; lng: number }; onResolve?: ((i: IssueRow) => void) | undefined }) {
   const [sel, setSel] = useState<IssueRow>();
   const [me, setMe] = useState<{ lat: number; lng: number }>();
   const [filter, setFilter] = useState<"open" | "all">("all");
   useEffect(() => { getPosition().then(setMe).catch(() => {}); }, []);
   const list = issues.filter((i) => filter === "all" || i.status !== "Resolved");
-  const urls = usePhotoUrls(sel ? [sel.photo_url] : []);
+  const urls = usePhotoUrls(sel ? list.filter((i) => distanceKm(i, sel) < 0.05).map((i) => i.photo_url) : []);
   return (
     <div className="space-y-3 animate-in fade-in">
       <div className="flex items-center justify-between gap-2">
@@ -331,19 +350,37 @@ function MapView({ issues, center, onResolve }: { issues: IssueRow[]; center: { 
         </div>
       </div>
       <IssueMap issues={list} center={me ?? center} me={me} onSelect={setSel} />
-      {sel && (
-        <div className="flex gap-3 rounded-3xl bg-card p-4 shadow-soft animate-in fade-in">
-          {urls[sel.photo_url] ? <img src={urls[sel.photo_url]} alt="" className="size-16 rounded-full object-cover" /> : <IconPill><MapPin className="size-5" /></IconPill>}
-          <div className="min-w-0 flex-1 space-y-2">
-            <div className="font-semibold">{sel.title}</div>
-            <div className="flex flex-wrap gap-2"><StatusBadge s={sel.status} /><Severity n={sel.severity} /></div>
-            <div className="flex flex-wrap gap-2">
-              <a href={directionsUrl(sel)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-full bg-warm px-4 py-2 text-sm font-bold text-primary-foreground"><Navigation className="size-4" />Directions</a>
-              {onResolve && sel.status !== "Resolved" && <button onClick={() => onResolve(sel)} className="inline-flex items-center gap-1.5 rounded-full bg-resolved-soft px-4 py-2 text-sm font-bold text-resolved"><Camera className="size-4" />Verify fix</button>}
+      {sel && (() => {
+        const spot = list
+          .filter((i) => distanceKm(i, sel) < 0.05)
+          .sort((a, b) => (a.status === "Resolved" ? 1 : 0) - (b.status === "Resolved" ? 1 : 0) || b.severity - a.severity);
+        const reporters = spot.reduce((n, i) => n + Math.max(1, i.merged_count), 0);
+        const open = spot.filter((i) => i.status !== "Resolved");
+        const maxSev = Math.max(...spot.map((i) => i.severity));
+        return (
+          <div className="space-y-3 rounded-3xl bg-card p-4 shadow-soft animate-in fade-in">
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <h2 className="text-lg font-bold">Issues at this spot</h2>
+                <p className="text-xs text-muted-foreground">{sel.lat.toFixed(4)}, {sel.lng.toFixed(4)}</p>
+              </div>
+              <button onClick={() => setSel(undefined)} aria-label="Close" className="grid size-9 place-items-center rounded-full bg-secondary"><X className="size-4" /></button>
             </div>
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <div className="rounded-full bg-secondary px-2 py-2"><div className="font-display text-lg font-bold">{spot.length}</div><div className="text-[11px] text-muted-foreground">Problems</div></div>
+              <div className="rounded-full bg-secondary px-2 py-2"><div className="font-display text-lg font-bold">{reporters}</div><div className="text-[11px] text-muted-foreground">Citizens reported</div></div>
+              <div className="rounded-full bg-secondary px-2 py-2"><div className="font-display text-lg font-bold">{open.length}</div><div className="text-[11px] text-muted-foreground">Still open</div></div>
+            </div>
+            <p className="text-sm"><span className="font-semibold">Highest severity here:</span> {maxSev}/5 — {maxSev >= 4 ? "urgent, fix first" : maxSev >= 3 ? "moderate priority" : "low priority"}</p>
+            <div className="max-h-80 space-y-2 overflow-y-auto">
+              {spot.map((i) => (
+                <SpotRow key={i.id} i={i} photo={urls[i.photo_url]} onResolve={onResolve} />
+              ))}
+            </div>
+            <a href={directionsUrl(sel)} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-1.5 rounded-full bg-warm py-3 text-sm font-bold text-primary-foreground"><Navigation className="size-4" />Directions to this spot</a>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
