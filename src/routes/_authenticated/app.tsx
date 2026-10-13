@@ -270,7 +270,7 @@ function ReportFlow({ me, onDone, onBack }: { me: Me; onDone: () => void; onBack
             </div>
           </div>
           <label className="relative block space-y-2">
-            <span className="text-sm font-semibold">Describe the issue</span>
+            <span className="text-sm font-semibold">Describe the issue <span className="font-normal text-muted-foreground">(optional — AI detects the problem from the photo)</span></span>
             <textarea value={note} onChange={(e) => setNote(e.target.value)} onFocus={() => setFocus(true)} onBlur={() => setTimeout(() => setFocus(false), 150)} maxLength={500} rows={3} placeholder="Start typing, e.g. pothole, garbage, streetlight…" aria-label="Description"
               className="w-full resize-none rounded-3xl border bg-card px-5 py-4 outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-ring" />
             {focus && (() => {
