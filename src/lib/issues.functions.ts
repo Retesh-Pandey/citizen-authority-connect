@@ -15,10 +15,11 @@ async function addPoints(admin: any, userId: string, pts: number) {
   await admin.from("profiles").update({ points: (data?.points ?? 0) + pts }).eq("id", userId);
 }
 
-async function signed(admin: any, path: string) {
-  const { data, error } = await admin.storage.from(BUCKET).createSignedUrl(path, 600);
+/** Downloads the photo bytes so the AI always receives the actual image. */
+async function photoBytes(admin: any, path: string) {
+  const { data, error } = await admin.storage.from(BUCKET).download(path);
   if (error || !data) throw new Error("Could not read the photo");
-  return data.signedUrl as string;
+  return new Uint8Array(await (data as Blob).arrayBuffer());
 }
 
 const reportInput = z.object({
@@ -41,14 +42,16 @@ export const reportIssue = createServerFn({ method: "POST" })
     if (!data.photoPath.startsWith(`${userId}/`)) throw new Error("Invalid photo");
     const { supabaseAdmin: admin } = await import("@/integrations/supabase/client.server");
 
-    const photoUrl = await signed(admin, data.photoPath);
+    const photo = await photoBytes(admin, data.photoPath);
     const { askVisionJson } = await import("./ai.server");
-    const ai = await askVisionJson<{ is_civic_issue: boolean; title: string; category: string; department: string; severity: number }>(
-        `You are a municipal triage assistant. Look at this citizen photo${data.description ? ` (note: "${data.description}")` : ""}.
-Return json: {"is_civic_issue": boolean, "title": short title (max 6 words), "category": one of ["Pothole","Garbage","Waterlogging","Streetlight","Broken Footpath","Sewage","Other"], "department": one of ["Roads","Sanitation","Water","Electrical"], "severity": integer 1-5 (5 = dangerous / very large)}.`,
-        [photoUrl],
+    const ai = await askVisionJson<{ is_civic_issue: boolean; title: string; category: string; department: string; severity: number; matches_note?: boolean; seen?: string }>(
+        `You are a strict municipal triage assistant. Judge ONLY what is actually visible in the attached photo.${data.description ? ` The citizen wrote: "${data.description}" — treat this as an unverified claim; never describe things that are not visible in the photo.` : ""}
+If the photo does not clearly show a public civic problem (e.g. it shows a person, a room, a screen, a blank/blurry image), set is_civic_issue to false. Also set "matches_note" to false if the citizen's note describes something not visible in the photo.
+Return json: {"is_civic_issue": boolean, "title": short title (max 6 words), "category": one of ["Pothole","Garbage","Waterlogging","Streetlight","Broken Footpath","Sewage","Other"], "department": one of ["Roads","Sanitation","Water","Electrical"], "severity": integer 1-5 (5 = dangerous / very large), "matches_note": boolean, "seen": one short sentence describing what is actually in the photo}.`,
+        [photo],
       );
-    if (!ai.is_civic_issue) throw new Error("AI couldn't find a civic issue in this photo. Please retake it.");
+    if (!ai.is_civic_issue) throw new Error(`AI couldn't find a civic issue in this photo${ai.seen ? ` (it sees: ${ai.seen})` : ""}. Please retake it at the spot.`);
+    if (data.description && ai.matches_note === false) throw new Error(`Your description doesn't match the photo${ai.seen ? ` — AI sees: ${ai.seen}` : ""}. Please fix the description or retake the photo.`);
     if (data.department) ai.department = data.department;
     const severity = Math.min(5, Math.max(1, Math.round(ai.severity || 2)));
 
@@ -101,7 +104,7 @@ export const resolveIssue = createServerFn({ method: "POST" })
       `Image 1 is a citizen's report of a "${issue.category}" issue ("${issue.title}"). Image 2 was taken later by a municipal worker at the same GPS spot.
 Decide: is image 2 plausibly the same place, and has the reported problem been fixed?
 Return json: {"same_location": boolean, "resolved": boolean, "reason": one short sentence}.`,
-      [await signed(admin, issue.photo_url), await signed(admin, data.photoPath)],
+      [await photoBytes(admin, issue.photo_url), await photoBytes(admin, data.photoPath)],
     );
     const ok = ai.same_location && ai.resolved;
     if (!ok) {
