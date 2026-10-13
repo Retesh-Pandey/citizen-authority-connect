@@ -51,7 +51,6 @@ Return json: {"is_civic_issue": boolean, "title": short title (max 6 words), "ca
         [photo],
       );
     if (!ai.is_civic_issue) throw new Error(`AI couldn't find a civic issue in this photo${ai.seen ? ` (it sees: ${ai.seen})` : ""}. Please retake it at the spot.`);
-    if (false) throw new Error(`Your description doesn't match the photo${ai.seen ? ` — AI sees: ${ai.seen}` : ""}. Please fix the description or retake the photo.`);
     if (data.department) ai.department = data.department;
     const severity = Math.min(5, Math.max(1, Math.round(ai.severity || 2)));
 
