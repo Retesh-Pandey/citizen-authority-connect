@@ -20,7 +20,7 @@ export async function askVisionJson<T>(prompt: string, images: Uint8Array[]): Pr
         role: "user",
         content: [
           { type: "text", text: prompt + "\nRespond with ONLY a json object, no markdown." },
-          ...images.map((b) => ({ type: "image" as const, image: b, mediaType: "image/jpeg" })),
+          ...images.map((b) => ({ type: "file" as const, data: b, mediaType: "image/jpeg" })),
         ],
       },
     ],
