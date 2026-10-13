@@ -15,8 +15,17 @@ export function LiveCamera({ onCapture, onClose, label = "Capture" }: {
   const [inFrame, setInFrame] = useState(false);
   useEffect(() => { try { setInFrame(window.self !== window.top); } catch { setInFrame(true); } }, []);
   const [facing, setFacing] = useState<"environment" | "user">("environment");
+  const [allowed, setAllowed] = useState(false);
 
   useEffect(() => {
+    // Skip the ask screen if the browser already granted camera access
+    navigator.permissions?.query({ name: "camera" as PermissionName })
+      .then((p) => { if (p.state === "granted") setAllowed(true); })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (!allowed) return;
     let stream: MediaStream | undefined;
     let cancelled = false;
     setReady(false);
@@ -36,7 +45,7 @@ export function LiveCamera({ onCapture, onClose, label = "Capture" }: {
       })
       .catch(() => setError("Camera is blocked here. The editor preview window doesn't allow camera access — open the app in its own tab, allow camera when asked, or use your phone camera below."));
     return () => { cancelled = true; stream?.getTracks().forEach((t) => t.stop()); };
-  }, [facing]);
+  }, [facing, allowed]);
 
   const capture = () => {
     const v = videoRef.current;
@@ -60,6 +69,22 @@ export function LiveCamera({ onCapture, onClose, label = "Capture" }: {
     c.toBlob((b) => b && onCapture(b, URL.createObjectURL(b)), "image/jpeg", 0.85);
     if (fileRef.current) fileRef.current.value = "";
   };
+
+  if (!allowed) {
+    return (
+      <div className="space-y-3">
+        <div className="grid aspect-[3/4] w-full place-content-center gap-5 rounded-[2rem] bg-secondary p-8 text-center">
+          <span className="mx-auto grid size-20 place-items-center rounded-full bg-warm text-primary-foreground shadow-soft"><Camera className="size-9" /></span>
+          <div className="space-y-2">
+            <h2 className="text-xl font-bold">Allow camera access</h2>
+            <p className="text-sm text-secondary-foreground">We need your camera to take a live photo of the issue at the spot. When your browser asks, tap <b>Allow</b>.</p>
+          </div>
+          <button onClick={() => setAllowed(true)} className="mx-auto rounded-full bg-warm px-8 py-4 font-bold text-primary-foreground shadow-soft active:scale-95">Allow camera</button>
+          {inFrame && <a href={window.location.href} target="_blank" rel="noreferrer" className="mx-auto text-sm font-semibold text-primary underline">Camera not opening? Open app in a new tab</a>}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3">
