@@ -24,6 +24,14 @@ function setLang(code: string) {
   document.cookie = `googtrans=${val};path=/;${exp}`;
   document.cookie = `googtrans=${val};path=/;domain=${host};${exp}`;
   document.cookie = `googtrans=${val};path=/;domain=.${host.split(".").slice(-2).join(".")};${exp}`;
+  // Switch instantly without reloading: drive Google's hidden language selector.
+  const combo = document.querySelector<HTMLSelectElement>("select.goog-te-combo");
+  if (combo) {
+    combo.value = code;
+    combo.dispatchEvent(new Event("change"));
+    if (code === "en") window.location.reload();
+    return;
+  }
   window.location.reload();
 }
 
@@ -57,7 +65,7 @@ export function LanguagePicker() {
       {open && (
         <div className="absolute right-0 top-12 z-40 grid w-56 grid-cols-2 gap-1 rounded-3xl border bg-card p-2 shadow-soft">
           {LANGS.map(([c, n]) => (
-            <button key={c} onClick={() => { setOpen(false); if (c !== lang) setLang(c); }}
+            <button key={c} onClick={() => { setOpen(false); if (c !== lang) { setL(c); setLang(c); } }}
               className={`rounded-full px-3 py-2 text-sm font-semibold ${c === lang ? "bg-warm text-primary-foreground" : "hover:bg-secondary"}`}>{n}</button>
           ))}
         </div>
