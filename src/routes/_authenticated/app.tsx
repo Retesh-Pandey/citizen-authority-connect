@@ -12,6 +12,7 @@ import { LiveCamera } from "@/components/LiveCamera";
 import { LanguagePicker } from "@/components/LanguagePicker";
 import { NotificationBell } from "@/components/NotificationBell";
 import { Toaster } from "@/components/ui/sonner";
+import { toast } from "sonner";
 import { IssueMap, directionsUrl } from "@/components/IssueMap";
 import { getPosition, distanceKm } from "@/lib/locations";
 
@@ -166,6 +167,14 @@ function ReportCard({ i, photo }: { i: IssueRow; photo?: string | undefined }) {
     await supabase.from("issues").update({ citizen_confirmed: true }).eq("id", i.id);
     qc.invalidateQueries({ queryKey: ["issues"] });
   };
+  const canDelete = i.status !== "Resolved" && i.merged_count <= 1;
+  const remove = async () => {
+    if (!window.confirm("Delete this report? This cannot be undone.")) return;
+    const { error } = await supabase.from("issues").delete().eq("id", i.id);
+    if (error) { toast.error("Could not delete this report."); return; }
+    toast.success("Report deleted");
+    qc.invalidateQueries({ queryKey: ["issues"] });
+  };
   return (
     <div className="rounded-3xl bg-card p-4 shadow-soft">
       <div className="flex gap-3">
@@ -182,6 +191,11 @@ function ReportCard({ i, photo }: { i: IssueRow; photo?: string | undefined }) {
           {i.ai_verdict && <p className="mt-2 text-xs text-muted-foreground"><Sparkles className="mr-1 inline size-3" />{i.ai_verdict}</p>}
         </div>
       </div>
+      {canDelete && (
+        <button onClick={remove} className="mt-3 flex w-full items-center justify-center gap-2 rounded-full bg-muted py-2.5 text-sm font-semibold text-destructive transition active:scale-95">
+          <Trash2 className="size-4" />Delete my report
+        </button>
+      )}
       {i.status === "Resolved" && (
         <button disabled={i.citizen_confirmed} onClick={confirm}
           className="mt-3 flex w-full items-center justify-center gap-2 rounded-full bg-resolved-soft py-3 font-semibold text-resolved transition active:scale-95 disabled:opacity-70">
