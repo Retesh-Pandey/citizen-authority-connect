@@ -47,6 +47,21 @@ export const reportIssue = createServerFn({ method: "POST" })
     const ai = await askVisionJson<{ is_civic_issue: boolean; title: string; category: string; department: string; severity: number; matches_note?: boolean; seen?: string }>(
         `You are a strict municipal triage assistant. Judge ONLY what is actually visible in the attached photo.${data.description ? ` The citizen wrote: "${data.description}" — treat this as an unverified claim; never describe things that are not visible in the photo.` : ""}
 If the photo does not clearly show a public civic problem (e.g. it shows a person, a room, a screen, a blank/blurry image), set is_civic_issue to false. Also set "matches_note" to false if the citizen's note describes something not visible in the photo.
+
+GUIDE — category/department/severity from what is visible:
+- Hole or crack in tarmac, road cave-in, missing speed breaker -> Pothole, Roads. 1 = small crack, 3 = hole covering a lane part, 5 = deep/wide hole or cave-in on a busy road.
+- Broken tiles, uneven or collapsed pavement/footpath -> Broken Footpath, Roads. 2 usual, 4-5 if people could fall into a gap.
+- Piles of rubbish, overflowing bins, dumped waste, burnt garbage -> Garbage, Sanitation. 1 = a few bags, 3 = large pile on the street, 5 = huge heap blocking road or with animals/health hazard.
+- Standing water on road, flooded street or underpass -> Waterlogging, Water. 3 = knee-deep puddle, 5 = flooded road unsafe to cross.
+- Leaking/burst pipe, water gushing from the ground -> Waterlogging, Water.
+- Open manhole, overflowing drain, sewage on road -> Sewage, Sanitation. Open manhole = severity 5.
+- Dark/broken/fallen streetlight, leaning or fallen electric pole, hanging or exposed wires, damaged transformer -> Streetlight, Electrical. Exposed wires or fallen pole = 5; one unlit lamp = 2.
+- Not civic (set is_civic_issue false): selfies, people, indoor rooms, pets, screens, food, documents, blurry/dark/blank images, a clean intact road/pole/bin.
+EXAMPLES:
+Photo: large water-filled crater on a road -> {"is_civic_issue":true,"title":"Deep pothole on road","category":"Pothole","department":"Roads","severity":4,"matches_note":true,"seen":"A deep water-filled hole in the tarmac."}
+Photo: bent electric pole with wires hanging -> {"is_civic_issue":true,"title":"Damaged electric pole","category":"Streetlight","department":"Electrical","severity":5,"matches_note":true,"seen":"A leaning pole with loose wires."}
+Photo: a person's face indoors -> {"is_civic_issue":false,"title":"","category":"Other","department":"Roads","severity":1,"matches_note":false,"seen":"A person indoors, no public problem."}
+Photo: intact smooth road, note says "pothole" -> {"is_civic_issue":false,"title":"","category":"Other","department":"Roads","severity":1,"matches_note":false,"seen":"A clean road with no damage."}
 Return json: {"is_civic_issue": boolean, "title": short title (max 6 words), "category": one of ["Pothole","Garbage","Waterlogging","Streetlight","Broken Footpath","Sewage","Other"], "department": one of ["Roads","Sanitation","Water","Electrical"], "severity": integer 1-5 (5 = dangerous / very large), "matches_note": boolean, "seen": one short sentence describing what is actually in the photo}.`,
         [photo],
       );
@@ -102,6 +117,15 @@ export const resolveIssue = createServerFn({ method: "POST" })
     const ai = await askVisionJson<{ same_location: boolean; resolved: boolean; reason: string }>(
       `Image 1 is a citizen's report of a "${issue.category}" issue ("${issue.title}"). Image 2 was taken later by a municipal worker at the same GPS spot.
 Decide: is image 2 plausibly the same place, and has the reported problem been fixed?
+Be strict but fair. Rules:
+- same_location is true only if landmarks match (buildings, wall, road shape, poles, trees, skyline); different street/scene -> false. Lighting, angle and time of day may differ.
+- resolved is true only if the specific problem is clearly gone: pothole filled/patched, garbage removed, water drained, pole/lamp repaired or replaced, manhole covered, drain cleaned.
+- resolved is false if the problem is still visible, only partly fixed, or image 2 is blurry, indoors, a person, or unrelated.
+EXAMPLES:
+Image1 pothole, Image2 same road smooth patch -> {"same_location":true,"resolved":true,"reason":"The pothole is filled and the road is level."}
+Image1 garbage pile, Image2 same corner with garbage still there -> {"same_location":true,"resolved":false,"reason":"The garbage pile is still present."}
+Image1 broken pole, Image2 a different street -> {"same_location":false,"resolved":false,"reason":"The scene does not match the reported spot."}
+Image1 open drain, Image2 a selfie -> {"same_location":false,"resolved":false,"reason":"Image 2 is not a photo of the spot."}
 Return json: {"same_location": boolean, "resolved": boolean, "reason": one short sentence}.`,
       [await photoBytes(admin, issue.photo_url), await photoBytes(admin, data.photoPath)],
     );
