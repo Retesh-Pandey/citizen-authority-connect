@@ -59,3 +59,8 @@
 
 @utility bg-warm { background-image: var(--gradient-warm); }
 @utility shadow-soft { box-shadow: var(--shadow-soft); }
+
+/* Hide Google Translate's own toolbar; our pill picker replaces it */
+.goog-te-banner-frame, iframe.skiptranslate, .goog-te-gadget, #goog-gt-tt, .goog-te-balloon-frame, .VIpgJd-ZVi9od-ORHb-OEVmcd, .VIpgJd-ZVi9od-aZ2wEe-wOHMyf { display: none !important; }
+body { top: 0 !important; }
+font[style] { background: transparent !important; box-shadow: none !important; }
