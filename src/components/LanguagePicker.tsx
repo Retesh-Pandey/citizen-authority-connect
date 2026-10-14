@@ -24,6 +24,14 @@ function setLang(code: string) {
   document.cookie = `googtrans=${val};path=/;${exp}`;
   document.cookie = `googtrans=${val};path=/;domain=${host};${exp}`;
   document.cookie = `googtrans=${val};path=/;domain=.${host.split(".").slice(-2).join(".")};${exp}`;
+  // Switch instantly without reloading: drive Google's hidden language selector.
+  const combo = document.querySelector<HTMLSelectElement>("select.goog-te-combo");
+  if (combo) {
+    combo.value = code;
+    combo.dispatchEvent(new Event("change"));
+    if (code === "en") window.location.reload();
+    return;
+  }
   window.location.reload();
 }
 
