@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { LanguagePicker } from "@/components/LanguagePicker";
 import hero from "@/assets/hero-civic.jpg";
 import { Camera, MapPin, Sparkles, Trophy } from "lucide-react";
 
@@ -27,6 +28,7 @@ function Landing() {
     <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/80 to-background md:bg-gradient-to-r md:from-background md:via-background/85 md:to-background/10" />
     <main className="relative mx-auto flex min-h-screen max-w-md flex-col justify-center gap-8 px-5 py-10 md:ml-[8vw]">
       <div className="flex items-center gap-2">
+        <div className="order-last ml-auto"><LanguagePicker /></div>
         <span className="grid size-10 place-items-center rounded-full bg-warm text-primary-foreground"><MapPin className="size-5" /></span>
         <span className="font-display text-xl font-bold">CivicConnect</span>
       </div>

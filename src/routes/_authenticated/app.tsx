@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { meQuery, issuesQuery, leaderboardQuery, useLiveIssues, usePhotoUrls, uploadPhoto, type IssueRow } from "@/lib/useCivic";
 import { reportIssue, resolveIssue } from "@/lib/issues.functions";
 import { LiveCamera } from "@/components/LiveCamera";
+import { LanguagePicker } from "@/components/LanguagePicker";
 import { NotificationBell } from "@/components/NotificationBell";
 import { Toaster } from "@/components/ui/sonner";
 import { IssueMap, directionsUrl } from "@/components/IssueMap";
@@ -74,6 +75,7 @@ function AppPage() {
           <div className="flex items-center gap-2">
             <span className="flex items-center gap-1 rounded-full bg-accent px-3 py-1.5 text-sm font-bold text-accent-foreground"><Trophy className="size-4" />{me.profile?.points ?? 0}</span>
             <span className="rounded-full bg-secondary px-3 py-1.5 text-sm font-semibold capitalize text-secondary-foreground">{me.role}</span>
+            <LanguagePicker />
             <NotificationBell userId={me.id} />
             <button onClick={signOut} aria-label="Sign out" className="grid size-10 place-items-center rounded-full bg-secondary"><LogOut className="size-4" /></button>
           </div>
