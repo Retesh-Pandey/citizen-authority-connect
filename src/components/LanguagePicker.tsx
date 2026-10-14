@@ -65,7 +65,7 @@ export function LanguagePicker() {
       {open && (
         <div className="absolute right-0 top-12 z-40 grid w-56 grid-cols-2 gap-1 rounded-3xl border bg-card p-2 shadow-soft">
           {LANGS.map(([c, n]) => (
-            <button key={c} onClick={() => { setOpen(false); if (c !== lang) setLang(c); }}
+            <button key={c} onClick={() => { setOpen(false); if (c !== lang) { setL(c); setLang(c); } }}
               className={`rounded-full px-3 py-2 text-sm font-semibold ${c === lang ? "bg-warm text-primary-foreground" : "hover:bg-secondary"}`}>{n}</button>
           ))}
         </div>
