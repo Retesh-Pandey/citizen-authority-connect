@@ -1,0 +1,2 @@
+GRANT DELETE ON public.issues TO authenticated;
+CREATE POLICY "reporter deletes own open report" ON public.issues FOR DELETE TO authenticated USING (auth.uid() = reporter_id AND status <> 'Resolved' AND merged_count <= 1);

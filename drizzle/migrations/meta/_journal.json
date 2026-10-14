@@ -15,6 +15,13 @@
       "when": 1791782658547,
       "tag": "0001_migration",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791953571665,
+      "tag": "0002_reporter_delete_issue",
+      "breakpoints": true
     }
   ]
 }
