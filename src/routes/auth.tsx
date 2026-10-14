@@ -1,3 +1,4 @@
+import { LanguagePicker } from "@/components/LanguagePicker";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Building2, Loader2, MapPin, User, CheckCircle2, AlertCircle } from "lucide-react";
@@ -71,6 +72,7 @@ function AuthPage() {
       <div className="mb-6 flex items-center gap-2">
         <span className="grid size-10 place-items-center rounded-full bg-warm text-primary-foreground"><MapPin className="size-5" /></span>
         <span className="font-display text-xl font-bold">CivicConnect</span>
+        <div className="ml-auto"><LanguagePicker /></div>
       </div>
       <h1 className="text-3xl font-bold">{mode === "signin" ? "Welcome back" : "Join your city"}</h1>
 
