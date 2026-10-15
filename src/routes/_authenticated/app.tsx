@@ -7,7 +7,9 @@ import { X,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { meQuery, issuesQuery, leaderboardQuery, useLiveIssues, usePhotoUrls, uploadPhoto, type IssueRow } from "@/lib/useCivic";
-import { reportIssue, resolveIssue } from "@/lib/issues.functions";
+import { reportIssue, resolveIssue, deleteMyIssue, deleteMyAccount } from "@/lib/issues.functions";
+import { HoverTips } from "@/components/HoverTips";
+import { UserX } from "lucide-react";
 import { LiveCamera } from "@/components/LiveCamera";
 import { LanguagePicker } from "@/components/LanguagePicker";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -64,6 +66,14 @@ function AppPage() {
     await supabase.auth.signOut();
     nav({ to: "/auth", replace: true });
   };
+  const deleteAccount = async () => {
+    if (!window.confirm("Delete your profile permanently? Your points and open reports will be removed. This cannot be undone.")) return;
+    if (window.prompt('Type DELETE to confirm') !== "DELETE") return;
+    try { await deleteMyAccount(); } catch { toast.error("Could not delete your profile."); return; }
+    await qc.cancelQueries(); qc.clear();
+    await supabase.auth.signOut();
+    nav({ to: "/auth", replace: true });
+  };
 
   return (
     <div className="min-h-screen">
@@ -78,7 +88,9 @@ function AppPage() {
             <span className="rounded-full bg-secondary px-3 py-1.5 text-sm font-semibold capitalize text-secondary-foreground">{me.role}</span>
             <LanguagePicker />
             <NotificationBell userId={me.id} />
+            <button onClick={deleteAccount} aria-label="Delete my profile" className="grid size-10 place-items-center rounded-full bg-secondary text-destructive"><UserX className="size-4" /></button>
             <button onClick={signOut} aria-label="Sign out" className="grid size-10 place-items-center rounded-full bg-secondary"><LogOut className="size-4" /></button>
+            <HoverTips />
           </div>
         </div>
       </header>
@@ -170,10 +182,13 @@ function ReportCard({ i, photo }: { i: IssueRow; photo?: string | undefined }) {
   const canDelete = i.status !== "Resolved" && i.merged_count <= 1;
   const remove = async () => {
     if (!window.confirm("Delete this report? This cannot be undone.")) return;
-    const { error } = await supabase.from("issues").delete().eq("id", i.id);
-    if (error) { toast.error("Could not delete this report."); return; }
-    toast.success("Report deleted");
+    try {
+      const r = await deleteMyIssue({ data: { id: i.id } });
+      toast.success(r.removedPoints ? `Report deleted · ${r.removedPoints} points removed` : "Report deleted");
+    } catch { toast.error("Could not delete this report."); return; }
     qc.invalidateQueries({ queryKey: ["issues"] });
+    qc.invalidateQueries({ queryKey: ["me"] });
+    qc.invalidateQueries({ queryKey: ["leaderboard"] });
   };
   return (
     <div className="rounded-3xl bg-card p-4 shadow-soft">
@@ -403,7 +418,15 @@ function MapView({ issues, center, onResolve }: { issues: IssueRow[]; center: { 
 
 function Leaderboard({ role, meId }: { role: "citizen" | "authority"; meId: string }) {
   const [r, setR] = useState(role);
-  const { data = [], isLoading } = useQuery(leaderboardQuery(r));
+  const { data: raw = [], isLoading } = useQuery(leaderboardQuery(r));
+  // One row per person: accounts sharing the same name are combined and their points added together.
+  const data = Object.values(raw.reduce<Record<string, (typeof raw)[number] & { ids: string[] }>>((acc, p) => {
+    const key = p.display_name.trim().toLowerCase();
+    const cur = acc[key];
+    if (cur) { cur.points += p.points; cur.ids.push(p.id); }
+    else acc[key] = { ...p, display_name: p.display_name.trim(), ids: [p.id] };
+    return acc;
+  }, {})).sort((a, b) => b.points - a.points).map((p) => ({ ...p, isMe: p.ids.includes(meId) }));
   return (
     <div className="space-y-4 animate-in fade-in">
       <h1 className="text-2xl font-bold">Leaderboard</h1>
@@ -415,7 +438,7 @@ function Leaderboard({ role, meId }: { role: "citizen" | "authority"; meId: stri
       {isLoading ? <Loader2 className="mx-auto size-6 animate-spin text-primary" /> : (
         <ol className="space-y-2">
           {data.map((p, k) => (
-            <li key={p.id} className={`flex items-center gap-3 rounded-full bg-card p-2 pr-5 shadow-soft ${p.id === meId ? "ring-2 ring-ring" : ""}`}>
+            <li key={p.id} className={`flex items-center gap-3 rounded-full bg-card p-2 pr-5 shadow-soft ${p.isMe ? "ring-2 ring-ring" : ""}`}>
               <span className={`grid size-10 place-items-center rounded-full font-bold ${k < 3 ? "bg-warm text-primary-foreground" : "bg-secondary text-secondary-foreground"}`}>{k + 1}</span>
               <span className="flex-1 truncate font-semibold">{p.display_name}<span className="ml-2 text-xs font-normal text-muted-foreground">{p.district}</span></span>
               <span className="flex items-center gap-1 font-bold text-primary"><Trophy className="size-4" />{p.points}</span>

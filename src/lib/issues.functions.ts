@@ -83,6 +83,7 @@ Return json: {"is_civic_issue": boolean, "title": short title (max 6 words), "ca
         reporter_id: userId, title: ai.title, description: data.description ?? null, category: ai.category,
         department: ai.department, severity, lat: data.lat, lng: data.lng, photo_url: data.photoPath,
         country: data.country ?? null, state: data.state ?? null, district: data.district ?? null,
+        reporter_points: 10 + severity * 5,
       })
       .select("id")
       .single();
@@ -156,3 +157,39 @@ export const getPhotoUrls = createServerFn({ method: "POST" })
     return out;
   });
 
+
+/** Reporter deletes their own open, unmerged report; the points it earned are taken back. */
+export const deleteMyIssue = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
+    const { supabaseAdmin: admin } = await import("@/integrations/supabase/client.server");
+    const { data: issue } = await admin.from("issues").select("*").eq("id", data.id).maybeSingle();
+    if (!issue || issue.reporter_id !== userId) throw new Error("You can only delete your own report");
+    if (issue.status === "Resolved" || issue.merged_count > 1) throw new Error("This report can't be deleted");
+    const { error } = await admin.from("issues").delete().eq("id", data.id).eq("reporter_id", userId);
+    if (error) throw new Error("Could not delete the report");
+    await admin.from("notifications").delete().eq("issue_id", data.id);
+    await admin.storage.from(BUCKET).remove([issue.photo_url]);
+    const { data: p } = await admin.from("profiles").select("points").eq("id", userId).single();
+    await admin.from("profiles").update({ points: Math.max(0, (p?.points ?? 0) - (issue.reporter_points ?? 0)) }).eq("id", userId);
+    return { removedPoints: issue.reporter_points ?? 0 };
+  });
+
+/** Permanently deletes the caller's own account and their open reports. */
+export const deleteMyAccount = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { userId } = context;
+    const { supabaseAdmin: admin } = await import("@/integrations/supabase/client.server");
+    const { data: open } = await admin.from("issues").select("id, photo_url").eq("reporter_id", userId).neq("status", "Resolved").lte("merged_count", 1);
+    if (open?.length) {
+      await admin.from("issues").delete().in("id", open.map((o) => o.id));
+      await admin.storage.from(BUCKET).remove(open.map((o) => o.photo_url));
+    }
+    await admin.from("notifications").delete().eq("user_id", userId);
+    const { error } = await admin.auth.admin.deleteUser(userId);
+    if (error) throw new Error("Could not delete the account");
+    return { ok: true };
+  });

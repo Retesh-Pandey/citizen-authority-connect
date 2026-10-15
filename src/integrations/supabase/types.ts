@@ -30,6 +30,7 @@ export type Database = {
           merged_count: number
           photo_url: string
           reporter_id: string
+          reporter_points: number
           resolution_photo_url: string | null
           resolved_at: string | null
           resolver_id: string | null
@@ -53,6 +54,7 @@ export type Database = {
           merged_count?: number
           photo_url: string
           reporter_id: string
+          reporter_points?: number
           resolution_photo_url?: string | null
           resolved_at?: string | null
           resolver_id?: string | null
@@ -76,6 +78,7 @@ export type Database = {
           merged_count?: number
           photo_url?: string
           reporter_id?: string
+          reporter_points?: number
           resolution_photo_url?: string | null
           resolved_at?: string | null
           resolver_id?: string | null
