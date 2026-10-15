@@ -36,6 +36,13 @@
       "when": 1792043595578,
       "tag": "0004_tighten_read_policies",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792043647027,
+      "tag": "0005_scope_issues_read",
+      "breakpoints": true
     }
   ]
 }
