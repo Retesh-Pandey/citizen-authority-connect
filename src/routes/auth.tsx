@@ -50,9 +50,16 @@ function AuthPage() {
     e.preventDefault();
     setBusy(true); setMsg(undefined);
     if (mode === "signin") {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) { setBusy(false); return setMsg({ ok: false, text: error.message }); }
+      const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", data.user.id);
+      const actual = roles?.some((r) => r.role === "authority") ? "authority" : "citizen";
+      if (actual !== role) {
+        await supabase.auth.signOut();
+        setBusy(false);
+        return setMsg({ ok: false, text: `This email is not registered as a ${role}. Please switch to the ${actual} tab.` });
+      }
       setBusy(false);
-      if (error) return setMsg({ ok: false, text: error.message });
       nav({ to: "/app" });
     } else {
       if (loc !== "match") { setBusy(false); return setMsg({ ok: false, text: "Please confirm your current location matches the selected state." }); }
