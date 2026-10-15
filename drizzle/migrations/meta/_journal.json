@@ -22,6 +22,13 @@
       "when": 1791953571665,
       "tag": "0002_reporter_delete_issue",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792043420743,
+      "tag": "0003_issue_reporter_points",
+      "breakpoints": true
     }
   ]
 }
