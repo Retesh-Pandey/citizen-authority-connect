@@ -172,6 +172,24 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_leaderboard: {
+        Args: { _role: Database["public"]["Enums"]["app_role"] }
+        Returns: {
+          country: string | null
+          created_at: string
+          display_name: string
+          district: string | null
+          id: string
+          points: number
+          state: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "profiles"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

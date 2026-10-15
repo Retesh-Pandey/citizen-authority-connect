@@ -34,10 +34,7 @@ export const leaderboardQuery = (role: "citizen" | "authority") =>
   queryOptions({
     queryKey: ["leaderboard", role],
     queryFn: async () => {
-      const { data: ids } = await supabase.from("user_roles").select("user_id").eq("role", role);
-      const list = (ids ?? []).map((r) => r.user_id);
-      if (!list.length) return [] as Profile[];
-      const { data } = await supabase.from("profiles").select("*").in("id", list).order("points", { ascending: false }).limit(20);
+      const { data } = await supabase.rpc("get_leaderboard", { _role: role });
       return (data ?? []) as Profile[];
     },
   });

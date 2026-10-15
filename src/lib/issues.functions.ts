@@ -151,7 +151,14 @@ export const getPhotoUrls = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ paths: z.array(z.string().max(300)).max(100) }).parse(d))
   .handler(async ({ data, context }) => {
     if (!data.paths.length) return {} as Record<string, string>;
-    const { data: urls } = await context.supabase.storage.from(BUCKET).createSignedUrls(data.paths, 3600);
+    // Only sign paths that belong to existing issues (shared city-wide map data).
+    const { data: rows } = await context.supabase.from("issues").select("photo_url, resolution_photo_url");
+    const allowed = new Set<string>();
+    (rows ?? []).forEach((r: any) => { if (r.photo_url) allowed.add(r.photo_url); if (r.resolution_photo_url) allowed.add(r.resolution_photo_url); });
+    const paths = data.paths.filter((p) => allowed.has(p));
+    if (!paths.length) return {} as Record<string, string>;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: urls } = await supabaseAdmin.storage.from(BUCKET).createSignedUrls(paths, 3600);
     const out: Record<string, string> = {};
     (urls ?? []).forEach((u: any) => { if (u.path && u.signedUrl) out[u.path] = u.signedUrl; });
     return out;
