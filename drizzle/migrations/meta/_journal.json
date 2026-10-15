@@ -29,6 +29,13 @@
       "when": 1792043420743,
       "tag": "0003_issue_reporter_points",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792043595578,
+      "tag": "0004_tighten_read_policies",
+      "breakpoints": true
     }
   ]
 }
