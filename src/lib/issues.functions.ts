@@ -83,6 +83,7 @@ Return json: {"is_civic_issue": boolean, "title": short title (max 6 words), "ca
         reporter_id: userId, title: ai.title, description: data.description ?? null, category: ai.category,
         department: ai.department, severity, lat: data.lat, lng: data.lng, photo_url: data.photoPath,
         country: data.country ?? null, state: data.state ?? null, district: data.district ?? null,
+        reporter_points: 10 + severity * 5,
       })
       .select("id")
       .single();
