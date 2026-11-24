@@ -1,0 +1,2 @@
+- [ ] Add a forgot-password flow that emails a recovery code and lets users set a new password.
+- [ ] Remove Google Maps usage and its browser key; keep issue maps on a no-cost alternative.
