@@ -118,6 +118,11 @@ function AuthPage() {
           {mode === "signin" ? `Sign in as ${role}` : `Create ${role} account`}
         </button>
       </form>
+      {mode === "signin" && (
+        <button type="button" onClick={() => nav({ to: "/reset-password" })} className="mt-3 text-sm font-semibold text-primary">
+          Forgot password?
+        </button>
+      )}
       <button onClick={() => { setMode(mode === "signin" ? "signup" : "signin"); setMsg(undefined); }} className="mt-4 text-sm font-semibold text-primary">
         {mode === "signin" ? "New here? Create an account" : "Already have an account? Sign in"}
       </button>

@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Render issue maps with Leaflet and public OpenStreetMap tiles, loaded dynamically after hydration, to avoid paid map API calls and browser-only imports during server rendering.

@@ -15,7 +15,7 @@ import { LanguagePicker } from "@/components/LanguagePicker";
 import { NotificationBell } from "@/components/NotificationBell";
 import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
-import { IssueMap, directionsUrl } from "@/components/IssueMap";
+import { IssueMap, locationUrl } from "@/components/IssueMap";
 import { getPosition, distanceKm } from "@/lib/locations";
 
 export const Route = createFileRoute("/_authenticated/app")({
@@ -374,7 +374,7 @@ function MapView({ issues, center, onResolve }: { issues: IssueRow[]; center: { 
   return (
     <div className="space-y-3 animate-in fade-in">
       <div className="flex items-center justify-between gap-2">
-        <div><h1 className="text-2xl font-bold">City map</h1><p className="text-xs text-muted-foreground">{list.length} issues · <span className="text-pending">●</span> Pending <span className="text-primary">●</span> In progress <span className="text-resolved">●</span> Resolved · <span style={{ color: "#3b82f6" }}>●</span> You</p></div>
+        <div><h1 className="text-2xl font-bold">City map</h1><p className="text-xs text-muted-foreground">{list.length} issues · <span className="text-pending">●</span> Pending <span className="text-primary">●</span> In progress <span className="text-resolved">●</span> Resolved · <span className="text-primary">●</span> You</p></div>
         <div className="flex gap-2">
           <button onClick={() => setFilter(filter === "open" ? "all" : "open")} className="rounded-full bg-secondary px-3 py-2 text-sm font-semibold text-secondary-foreground">{filter === "open" ? "Open only" : "All issues"}</button>
           <button onClick={() => getPosition().then(setMe).catch(() => {})} aria-label="Show my location" className="grid size-10 place-items-center rounded-full bg-warm text-primary-foreground"><Navigation className="size-4" /></button>
@@ -408,7 +408,7 @@ function MapView({ issues, center, onResolve }: { issues: IssueRow[]; center: { 
                 <SpotRow key={i.id} i={i} photo={urls[i.photo_url]} onResolve={onResolve} />
               ))}
             </div>
-            <a href={directionsUrl(sel)} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-1.5 rounded-full bg-warm py-3 text-sm font-bold text-primary-foreground"><Navigation className="size-4" />Directions to this spot</a>
+            <a href={locationUrl(sel)} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-1.5 rounded-full bg-warm py-3 text-sm font-bold text-primary-foreground"><Navigation className="size-4" />Open this spot in OpenStreetMap</a>
           </div>
         );
       })()}
@@ -545,7 +545,7 @@ function Ticket({ i, photo, onVerify }: { i: IssueRow; photo?: string | undefine
               <button key={s} onClick={() => setStatus(s)} className={`flex-1 rounded-full py-1.5 text-xs font-semibold transition ${i.status === s ? "bg-warm text-primary-foreground" : "text-muted-foreground"}`}>{s}</button>
             ))}
           </div>
-          <a href={directionsUrl(i)} target="_blank" rel="noreferrer" aria-label="Directions" className="grid size-9 place-items-center rounded-full bg-secondary"><Navigation className="size-4" /></a>
+          <a href={locationUrl(i)} target="_blank" rel="noreferrer" aria-label="Open issue location in OpenStreetMap" title="Open issue location in OpenStreetMap" className="grid size-9 place-items-center rounded-full bg-secondary"><Navigation className="size-4" /></a>
           <button onClick={onVerify} className="flex items-center gap-1 rounded-full bg-resolved-soft px-3 text-xs font-bold text-resolved"><Camera className="size-3.5" />Resolve</button>
         </div>
       ) : (
